@@ -103,6 +103,7 @@ def main():
 
     separator = ';'
     joiner = '|'
+    strdelimiter = '"'
 
     attrs = list(sorted(attrs))
 
@@ -121,11 +122,13 @@ def main():
             if not first:
                 sys.stdout.write(separator)
             if attr in data[entry]:
+                sys.stdout.write(strdelimiter)
                 sys.stdout.write(
                         joiner.join(
                             data[entry][attr]
                         )
                 )
+                sys.stdout.write(strdelimiter)
             first = False
         sys.stdout.write('\n')
 
