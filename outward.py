@@ -36,6 +36,7 @@ class filepeek(object):
 
 def main():
     data = {}
+    attrs = set()
     current_dn = ''
     fp = filepeek()
     while True:
@@ -67,6 +68,8 @@ def main():
         if is_b64:
             full_value = base64.b64decode(full_value)
 
+        attrs.add(key)
+
         if key == 'dn':
             current_dn = full_value
             data[current_dn] = {}
@@ -79,6 +82,8 @@ def main():
                 data[current_dn][key] = []
 
             if len(full_value) < 500:
+                if type(full_value) is bytes:
+                    full_value = full_value.decode('utf8')
                 data[current_dn][key] += [full_value]
 
             else:
@@ -97,7 +102,33 @@ def main():
 
                 data[current_dn][key] += ['FILE=' + filename]
 
-    print(data)
+    separator = ';'
+    joiner = '|'
+
+    attrs = list(sorted(attrs))
+
+    first = True
+    for attr in attrs:
+        if not first:
+            sys.stdout.write(separator)
+        sys.stdout.write(attr)
+        first = False
+
+    sys.stdout.write('\n')
+
+    for entry in data:
+        first = True
+        for attr in attrs:
+            if not first:
+                sys.stdout.write(separator)
+            if attr in data[entry]:
+                sys.stdout.write(
+                        joiner.join(
+                            data[entry][attr]
+                        )
+                )
+            first = False
+        sys.stdout.write('\n')
 
 
 if __name__ == '__main__':
