@@ -2,6 +2,7 @@
 # encoding: utf-8 (as per PEP 263)
 
 import sys
+import os
 import fileinput
 import base64
 
@@ -74,14 +75,27 @@ def main():
             if not current_dn:
                 raise Exception('Non-dn attribute "%s" while not inside a dn block!' % (key))
 
-            if len(full_value) > 500:
-                with open('attr=%s,dn=%s' % (key, current_dn), 'wb') as f:
-                    f.write(full_value)
-                continue
-
             if key not in data[current_dn]:
                 data[current_dn][key] = []
-            data[current_dn][key] += [full_value]
+
+            if len(full_value) < 500:
+                data[current_dn][key] += [full_value]
+
+            else:
+                # too large for CSV output, write to file instead
+
+                # find unused filename
+                fileid = 0
+                while True:
+                    filename = 'dn=%s,attr=%s,id=%d' % (current_dn, key, fileid)
+                    if not os.path.exists(filename):
+                        break
+                    fileid += 1
+
+                with open(filename, 'wb') as f:
+                    f.write(full_value)
+
+                data[current_dn][key] += ['FILE=' + filename]
 
     print(data)
 
