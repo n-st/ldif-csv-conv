@@ -6,6 +6,11 @@ import os
 import fileinput
 import base64
 import string
+import csv
+
+SEPARATOR = ';'
+JOINER = '|'
+QUOTECHAR = '"'
 
 """
 Final structure:
@@ -118,30 +123,18 @@ def main():
 
     attrs = list(sorted(attrs))
 
-    first = True
-    for attr in attrs:
-        if not first:
-            sys.stdout.write(separator)
-        sys.stdout.write(attr)
-        first = False
+    csvwriter = csv.writer(sys.stdout, delimiter=SEPARATOR, quotechar=QUOTECHAR, quoting=csv.QUOTE_ALL)
 
-    sys.stdout.write('\n')
+    csvwriter.writerow(attrs)
 
     for entry in data:
-        first = True
+        row = []
         for attr in attrs:
-            if not first:
-                sys.stdout.write(separator)
+            content = ''
             if attr in data[entry]:
-                sys.stdout.write(strdelimiter)
-                sys.stdout.write(
-                        joiner.join(
-                            data[entry][attr]
-                        )
-                )
-                sys.stdout.write(strdelimiter)
-            first = False
-        sys.stdout.write('\n')
+                content = joiner.join(data[entry][attr])
+            row.append(content)
+        csvwriter.writerow(row)
 
 
 if __name__ == '__main__':
