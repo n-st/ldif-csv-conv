@@ -74,33 +74,32 @@ def main():
             current_dn = full_value
             data[current_dn] = {}
 
+        if not current_dn:
+            raise Exception('Non-dn attribute "%s" while not inside a dn block!' % (key))
+
+        if key not in data[current_dn]:
+            data[current_dn][key] = []
+
+        if len(full_value) < 500:
+            if type(full_value) is bytes:
+                full_value = full_value.decode('utf8')
+            data[current_dn][key] += [full_value]
+
         else:
-            if not current_dn:
-                raise Exception('Non-dn attribute "%s" while not inside a dn block!' % (key))
+            # too large for CSV output, write to file instead
 
-            if key not in data[current_dn]:
-                data[current_dn][key] = []
+            # find unused filename
+            fileid = 0
+            while True:
+                filename = 'dn=%s,attr=%s,id=%d' % (current_dn, key, fileid)
+                if not os.path.exists(filename):
+                    break
+                fileid += 1
 
-            if len(full_value) < 500:
-                if type(full_value) is bytes:
-                    full_value = full_value.decode('utf8')
-                data[current_dn][key] += [full_value]
+            with open(filename, 'wb') as f:
+                f.write(full_value)
 
-            else:
-                # too large for CSV output, write to file instead
-
-                # find unused filename
-                fileid = 0
-                while True:
-                    filename = 'dn=%s,attr=%s,id=%d' % (current_dn, key, fileid)
-                    if not os.path.exists(filename):
-                        break
-                    fileid += 1
-
-                with open(filename, 'wb') as f:
-                    f.write(full_value)
-
-                data[current_dn][key] += ['FILE=' + filename]
+            data[current_dn][key] += ['FILE=' + filename]
 
     separator = ';'
     joiner = '|'
