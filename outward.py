@@ -5,6 +5,7 @@ import sys
 import os
 import fileinput
 import base64
+import string
 
 """
 Final structure:
@@ -37,6 +38,7 @@ class filepeek(object):
 def main():
     data = {}
     attrs = set()
+    charset = set()
     current_dn = ''
     fp = filepeek()
     while True:
@@ -83,7 +85,8 @@ def main():
         if len(full_value) < 500:
             if type(full_value) is bytes:
                 full_value = full_value.decode('utf8')
-            data[current_dn][key] += [full_value]
+
+            store_value = full_value
 
         else:
             # too large for CSV output, write to file instead
@@ -99,7 +102,15 @@ def main():
             with open(filename, 'wb') as f:
                 f.write(full_value)
 
-            data[current_dn][key] += ['FILE=' + filename]
+            store_value = 'FILE=' + filename
+
+        data[current_dn][key] += [store_value]
+        charset.update(set(store_value))
+
+    usable_chars = set(string.printable) - set(string.whitespace)
+    available_chars = usable_chars - charset
+    sys.stderr.write('The following characters DO NOT appear in the dataset (i.e. they can be freely used as separators etc):\n')
+    sys.stderr.write('%s\n' % (' '.join(sorted(available_chars))))
 
     separator = ';'
     joiner = '|'
