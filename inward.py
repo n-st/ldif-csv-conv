@@ -12,7 +12,7 @@ LINELENGTH = 76
 
 SEPARATOR = ';'
 JOINER = '|'
-STRDELIMITER = '"'
+QUOTECHAR = '"'
 
 """
 Final structure:
@@ -32,31 +32,48 @@ def main():
             replace_whitespace=False, drop_whitespace=False, initial_indent='',
             subsequent_indent=' ', break_long_words=True,
             break_on_hyphens=False)
-    csvreader = csv.reader(fileinput.input(mode='r'), delimiter=SEPARATOR, quoting=csv.QUOTE_ALL)
+    csvreader = csv.reader(fileinput.input(mode='r'), delimiter=SEPARATOR, quotechar=QUOTECHAR, quoting=csv.QUOTE_ALL)
     first = True
     for row in csvreader:
         if first:
             attrs = row
+            dn_index = attrs.index('dn')
             first = False
 
         else:
+            line = 'dn: %s\n' % (row[dn_index])
+            sys.stdout.write('\n'.join(wrapper.wrap(line)))
+
             for idx, attr in enumerate(attrs):
-                value = row[idx]
-                if value.startswith('FILE='):
-                    filename = value[len('FILE='):]
-                    with open(filename, 'rb') as f:
-                        value = f.read()
-                    try:
-                        value = value.decode('ascii')
-                    except UnicodeDecodeError:
-                        attr = attr + ':'
-                        value = base64.b64encode(value).decode('ascii')
-                else:
-                    if not is_ascii(value):
-                        attr = attr + ':'
-                        value = base64.b64encode(value.encode('utf8')).decode('ascii')
-                line = '%s: %s\n' % (attr, value)
-                sys.stdout.write('\n'.join(wrapper.wrap(line)))
+                values = row[idx]
+
+                for value in values.split(JOINER):
+                    if value == '':
+                        # skip undefined attributes
+                        continue
+
+                    if attr == 'dn':
+                        # skip dn attribute (we already included it in the beginning)
+                        continue
+
+                    if value.startswith('FILE='):
+                        filename = value[len('FILE='):]
+                        with open(filename, 'rb') as f:
+                            value = f.read()
+                        try:
+                            value = value.decode('ascii')
+                        except UnicodeDecodeError:
+                            attr = attr + ':'
+                            value = base64.b64encode(value).decode('ascii')
+                    else:
+                        if not is_ascii(value):
+                            attr = attr + ':'
+                            value = base64.b64encode(value.encode('utf8')).decode('ascii')
+
+                    line = '%s: %s\n' % (attr, value)
+                    sys.stdout.write('\n'.join(wrapper.wrap(line)))
+
+            sys.stdout.write('\n')
 
     return 0
 
