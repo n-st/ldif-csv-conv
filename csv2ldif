@@ -56,6 +56,8 @@ def main():
                         # skip dn attribute (we already included it in the beginning)
                         continue
 
+                    is_base64 = False
+
                     if value.startswith('FILE='):
                         filename = value[len('FILE='):]
                         with open(filename, 'rb') as f:
@@ -63,14 +65,17 @@ def main():
                         try:
                             value = value.decode('ascii')
                         except UnicodeDecodeError:
-                            attr = attr + ':'
+                            is_base64 = True
                             value = base64.b64encode(value).decode('ascii')
                     else:
                         if not is_ascii(value):
-                            attr = attr + ':'
+                            is_base64 = True
                             value = base64.b64encode(value.encode('utf8')).decode('ascii')
 
-                    line = '%s: %s\n' % (attr, value)
+                    if is_base64:
+                        line = '%s:: %s\n' % (attr, value)
+                    else:
+                        line = '%s: %s\n' % (attr, value)
                     sys.stdout.write('\n'.join(wrapper.wrap(line)))
 
             sys.stdout.write('\n')
